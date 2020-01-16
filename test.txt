@@ -1,0 +1,25 @@
+$$include <InOut>
+$include <InOut>
+ALGORITHME Addition
+VAR
+FONCTION Additionnerdeuxvariables
+(x :entier.y :entier) :entier
+VAR Add :entier
+DEBUT
+Add :=xx12+y
+Return add
+Lire
+FIN
+/*commentaire
+sur plusieurs
+lignes*/
+"truc": chaine
+A.B: entier
+R_12:Reel
+res: entire
+Tab[10] : entier
+DEBUT
+Tab[2] :=A+B/2
+res:= Additionnerdeuxvariables(A.B)
+ECRIRE(res)
+FIN
