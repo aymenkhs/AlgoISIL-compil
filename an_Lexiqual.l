@@ -6,8 +6,8 @@
     typedef struct Unite Unite;
     typedef struct Unite{
       int line;
-      char nom[100];
-      char type[100];
+      char *nom;
+      char *type;
       Unite *next;
     };
 
@@ -18,34 +18,31 @@
 
 
     Table_Symb * InitListe ();
-    void add_Unite(char * type, int line);
+    void add_Unite(char * type);
     void aficherTable();
     int exist(char * nom);
-
-    // Variables pour determiner la position (ligne...)
-    int nb_unite_lexical = 0;
-    int nb_ligne = 1; // les lignes commencent a 1
-    int nb_unite_ligne = 0;
+    int str_to_long(const char *s, long *p);
+    void tirer();
 
     Table_Symb *head;
 
-    int erreur = 0;
-
-
 %}
+
+%option yylineno
 
 KEYWORD (ALGORITHME)|(VAR)|(FONCTION)|(DEBUT)|(FIN)|(Return)|(entier)|(reel)|(chaine)|($$include)
 DECBIBL <{BIBLIOTHEQUES}>
 BIBLIOTHEQUES (InOut)|(Arithme)
-OPERATEUR_ART [+-/]|'*'|(:=)
+FONCTION_PRED (Lire)|(Ecrire)
+OPERATEUR_ART [+-/]|"*"|(:=)
 OPERATEUR_COMP [<>=]|(<=)|(>=)|(!=)
-SEPARATEUR :|'('|')'|'.'
+SEPARATEUR :|"("|")"|"."|"["|"]"
 LETTRE [a-zA-Z]
 CHIFRE [0-9]
 NOMBRE {CHIFRE}+
 ENTIER -?{NOMBRE}
 REEL {ENTIER}\.{NOMBRE}
-CHAINE "[^\"]"
+CHAINE \"[^\"]*\"
 IDF {LETTRE}({LETTRE}|{CHIFRE}|_({LETTRE}|{CHIFRE}))*
 COMMENTAIRE "/*"((("*"[^/])?)|[^*])*"*/"
 SPACE [ \t]+
@@ -53,18 +50,20 @@ SPACE [ \t]+
 %%
 
 <<EOF>> {yyterminate();}
-{KEYWORD} {add_Unite("mots clee", nb_ligne);}
-{DECBIBL} {add_Unite("bibiliotheque", nb_ligne);}
-{OPERATEUR_ART} {add_Unite("operateur arithmetique", nb_ligne);}
-{OPERATEUR_COMP} {add_Unite("operateur de comparaison", nb_ligne);}
-{ENTIER} {add_Unite("entier", nb_ligne);}
-{REEL} {add_Unite("reel", nb_ligne);}
-{CHAINE} {add_Unite("chaine", nb_ligne);}
-{IDF} {add_Unite("identificateur", nb_ligne);}
-{COMMENTAIRE};
-{SPACE};
-\n {nb_ligne++;}
-. {add_Unite("erreur Lexiqual", nb_ligne);}
+{KEYWORD} {add_Unite("mots clee");}
+{DECBIBL} {add_Unite("bibiliotheque");}
+{FONCTION_PRED} {add_Unite("fonction predefinie");}
+{SEPARATEUR} {add_Unite("separateur");}
+{OPERATEUR_ART} {add_Unite("operateur arithmetique");}
+{OPERATEUR_COMP} {add_Unite("operateur de comparaison");}
+{ENTIER} {add_Unite("entier");}
+{REEL} {add_Unite("reel");}
+{CHAINE} {add_Unite("chaine");}
+{IDF} {add_Unite("identificateur");}
+{COMMENTAIRE} {printf("commentaire :\n%s\n\n",yytext);}
+{SPACE}
+\n
+. {add_Unite("erreur Lexiqual");}
 
 %%
 
@@ -75,10 +74,8 @@ Table_Symb * InitListe (){
 	return head;
 }
 
-void add_Unite(char type[], int line){
-  char *ch;
-  strcpy(ch, yytext);
-  if(!exist(ch)){
+void add_Unite(char type[]){
+  if(!exist(yytext)){
 
     Unite *P;
 
@@ -91,19 +88,32 @@ void add_Unite(char type[], int line){
     }
     head->last = P;
 
-    if(!strcmp(type,"ENTIER")){
-        int a;
-        if(!str_to_long(ch, &a)){
+    if(!strcmp(type,"entier")){
+        long a;
+        if(!str_to_long(yytext, &a)){
             if(a<-32768 || a>32767){
-                P->type = "ERREUR Entier trop grand ou petit"
+                char *chaine = "ERREUR Entier trop grand ou petit";
+                P->type = malloc((strlen(chaine)+1) * sizeof(char));
+                strcpy(P->type, chaine);
+            }else{
+              char *chaine = "entier";
+              P->type = malloc((strlen(chaine)+1) * sizeof(char));
+              strcpy(P->type, chaine);
             }
         }
+    }else if (!strcmp(type,"identificateur") && strlen(yytext)>8){
+        char *chaine = "ERREUR Idf trop grand";
+        P->type = malloc((strlen(chaine)+1) * sizeof(char));
+        strcpy(P->type, chaine);
     }else{
+        P->type = malloc((strlen(type)+1) * sizeof(char));
         strcpy(P->type, type);
     }
 
-    strcpy(P->nom, ch);
-    P->line = line;
+
+    P->nom = malloc((strlen(yytext)+1) * sizeof(char));
+    strcpy(P->nom, yytext);
+    P->line = yylineno;
     P->next = NULL;
   }
 }
@@ -111,15 +121,11 @@ void add_Unite(char type[], int line){
 int exist(char * nom){
     Unite * P = head->first;
     while(P != NULL){
-      if(nb_ligne >16){
-      }
       if(!strcmp(P->nom, nom)){
-        printf("trv %s\n",nom);
         return 1;
       }
       P = P->next;
     }
-    printf("ajout %s\n",nom);
     return 0;
 }
 
@@ -143,19 +149,27 @@ int str_to_long(const char *s, long *p)
 }
 
 void aficherTable(){
-    printf("\n/***************Table des Symboles***************/\n");
-    printf("_____________________________________\n");
-    printf("\t|nom Entite | code Entite | Ligne\n");
-    printf("_____________________________________\n");
+    printf("\n\n\n/***************Table des Symboles***************/\n");
+    tirer();
+    printf("\t|\t\t  nom Entite  \t\t|\t\tcode Entite\t\t| Ligne\n");
+    tirer();
 
     Unite *p = head->first;
     while(p != NULL){
-        printf("\t|%s | %s | %d\n",p->nom, p->type, p->line);
+        printf("\t|%40s | %35s | %d\n",p->nom, p->type, p->line);
         p = p->next;
     }
-    printf("_____________________________________\n");
+    tirer();
 }
 
+void tirer(){
+  // une fonction qui affiche les tirer juste pour ne pas les ecrire a chaque fois
+  // et avoir un meilleur affichage de la table
+  for(int i=0;i<94;i++){
+    printf("_");
+  }
+  printf("\n");
+}
 
 void main(){
     head = InitListe ();
