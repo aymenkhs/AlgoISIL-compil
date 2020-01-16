@@ -22,7 +22,7 @@
     void aficherTable();
     int exist(char * nom);
     int str_to_long(const char *s, long *p);
-    void tirer();
+    void afficher_tirer();
 
     Table_Symb *head;
 
@@ -53,11 +53,11 @@ SPACE [ \t]+
 {KEYWORD} {add_Unite("mots clee");}
 {DECBIBL} {add_Unite("bibiliotheque");}
 {FONCTION_PRED} {add_Unite("fonction predefinie");}
+{OPERATEUR_COMP} {add_Unite("operateur de comparaison");}
+{REEL} {add_Unite("reel");}
+{ENTIER} {add_Unite("entier");}
 {SEPARATEUR} {add_Unite("separateur");}
 {OPERATEUR_ART} {add_Unite("operateur arithmetique");}
-{OPERATEUR_COMP} {add_Unite("operateur de comparaison");}
-{ENTIER} {add_Unite("entier");}
-{REEL} {add_Unite("reel");}
 {CHAINE} {add_Unite("chaine");}
 {IDF} {add_Unite("identificateur");}
 {COMMENTAIRE} {printf("commentaire :\n%s\n\n",yytext);}
@@ -150,22 +150,22 @@ int str_to_long(const char *s, long *p)
 
 void aficherTable(){
     printf("\n\n\n/***************Table des Symboles***************/\n");
-    tirer();
+    afficher_tirer();
     printf("\t|\t\t  nom Entite  \t\t|\t\tcode Entite\t\t| Ligne\n");
-    tirer();
+    afficher_tirer();
 
     Unite *p = head->first;
     while(p != NULL){
         printf("\t|%40s | %35s | %d\n",p->nom, p->type, p->line);
         p = p->next;
     }
-    tirer();
+    afficher_tirer();
 }
 
-void tirer(){
+void afficher_tirer(){
   // une fonction qui affiche les tirer juste pour ne pas les ecrire a chaque fois
   // et avoir un meilleur affichage de la table
-  for(int i=0;i<94;i++){
+  for(int i=0;i<96;i++){
     printf("_");
   }
   printf("\n");
